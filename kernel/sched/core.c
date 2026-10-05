@@ -7149,6 +7149,10 @@ void __init sched_init(void)
 		struct rq *rq;
 
 		rq = cpu_rq(i);
+#ifdef CONFIG_SMP
+		/* Initialize private fair state on the rq's owning CPU. */
+		rq->cpu = i;
+#endif
 		raw_spin_lock_init(&rq->lock);
 		rq->nr_running = 0;
 		rq->calc_load_active = 0;
@@ -7195,7 +7199,6 @@ void __init sched_init(void)
 		rq->active_balance = 0;
 		rq->next_balance = jiffies;
 		rq->push_cpu = 0;
-		rq->cpu = i;
 		rq->online = 0;
 		rq->idle_stamp = 0;
 		rq->avg_idle = 2*sysctl_sched_migration_cost;

@@ -615,6 +615,23 @@ struct cfs_bandwidth { };
 
 #endif	/* CONFIG_CGROUP_SCHED */
 
+/* Private fair state; do not change ABI-visible rq/cfs_rq storage. */
+struct eevdf_rq {
+	/*
+	 * Virtual-time accounting for entities in tasks_timeline only:
+	 * avg_vruntime = sum(weight * (vruntime - min_vruntime)),
+	 * avg_load = sum(weight), with weight = scale_load_down(load.weight).
+	 * The running entity is not included while it is outside the tree.
+	 */
+	s64			avg_vruntime;
+	u64			avg_load;
+
+};
+
+#ifndef CONFIG_FAIR_GROUP_SCHED
+DECLARE_PER_CPU_SHARED_ALIGNED(struct eevdf_rq, eevdf_runqueues);
+#endif
+
 /* CFS-related fields in a runqueue */
 struct cfs_rq {
 	struct load_weight	load;
@@ -707,6 +724,10 @@ struct cfs_rq {
 	struct list_head	throttled_list;
 #endif /* CONFIG_CFS_BANDWIDTH */
 #endif /* CONFIG_FAIR_GROUP_SCHED */
+#ifdef CONFIG_FAIR_GROUP_SCHED
+	struct eevdf_rq		eevdf;
+#endif
+
 };
 
 static inline int rt_bandwidth_enabled(void)
@@ -1177,6 +1198,17 @@ static inline int cpu_of(struct rq *rq)
 	return rq->cpu;
 #else
 	return 0;
+#endif
+}
+
+
+/* Select the owner even when a remote CPU holds the runqueue lock. */
+static inline struct eevdf_rq *eevdf_rq_of(struct cfs_rq *cfs_rq)
+{
+#ifdef CONFIG_FAIR_GROUP_SCHED
+	return &cfs_rq->eevdf;
+#else
+	return per_cpu_ptr(&eevdf_runqueues, cpu_of(rq_of(cfs_rq)));
 #endif
 }
 
