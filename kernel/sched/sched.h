@@ -628,6 +628,13 @@ struct eevdf_rq {
 	/* EEVDF's accounting origin follows V in either direction. */
 	u64			zero_vruntime;
 
+	/*
+	 * Protection belongs to the last fair execution opportunity on this rq.
+	 * Keep it through SAVE/RESTORE, but not a real dequeue or class exit.
+	 * Neither sched_entity's KABI layout nor its saved vlag is changed.
+	 */
+	struct sched_entity	*protected_entity;
+	u64			vprot;
 };
 
 #ifndef CONFIG_FAIR_GROUP_SCHED
@@ -726,6 +733,7 @@ struct cfs_rq {
 	struct list_head	throttled_list;
 #endif /* CONFIG_CFS_BANDWIDTH */
 #endif /* CONFIG_FAIR_GROUP_SCHED */
+
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	struct eevdf_rq		eevdf;
 #endif
